@@ -1,3 +1,3 @@
-from app.shared.api_response import ApiResponse
+from app.shared.api_response import ApiError, ApiResponse
 
-__all__ = ["ApiResponse"]
+__all__ = ["ApiError", "ApiResponse"]
