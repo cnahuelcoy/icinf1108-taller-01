@@ -55,6 +55,7 @@ class PetsService:
         return existing
 
     def delete_all_for_student(self, student_id: str) -> None:
+        self.assert_student_exists(student_id)
         self.store.delete_by(lambda pet: pet.studentId == student_id)
 
     def find_owned(self, student_id: str, pet_id: str) -> Pet:
