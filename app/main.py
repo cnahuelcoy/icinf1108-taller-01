@@ -1,18 +1,15 @@
-# 1. IMPORTACIONES (Arriba del todo, línea 1)
-from fastapi import FastAPI, Request, HTTPException
-from fastapi.responses import JSONResponse
+from datetime import datetime
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from datetime import datetime
+from fastapi.responses import JSONResponse
 
 from app.pets.pets_controller import router as pets_router
 from app.students.students_controller import router as students_router
 
 
-
 def get_timestamp() -> str:
     return datetime.now().isoformat(timespec="seconds")
-
 
 
 def create_app() -> FastAPI:
@@ -22,7 +19,9 @@ def create_app() -> FastAPI:
         version="1.0",
     )
 
-    # Errores HTTP
+   
+    # Manejadores Globales de Errores (Estándar acordado)
+    
     @app.exception_handler(HTTPException)
     async def http_exception_handler(request: Request, exc: HTTPException):
         return JSONResponse(
@@ -31,12 +30,14 @@ def create_app() -> FastAPI:
                 "success": False,
                 "message": "Operación fallida",
                 "data": None,
-                "error": exc.detail,
+                "error": {
+                    "code": f"HTTP_{exc.status_code}",
+                    "detail": str(exc.detail),
+                },
                 "timestamp": get_timestamp(),
             },
         )
 
-    #Errores de datos no válidos
     @app.exception_handler(RequestValidationError)
     async def validation_exception_handler(request: Request, exc: RequestValidationError):
         return JSONResponse(
@@ -45,12 +46,14 @@ def create_app() -> FastAPI:
                 "success": False,
                 "message": "Error de validación en los datos enviados",
                 "data": None,
-                "error": str(exc.errors()),
+                "error": {
+                    "code": "VALIDATION_ERROR",
+                    "detail": str(exc.errors()),
+                },
                 "timestamp": get_timestamp(),
             },
         )
 
-    # Errores no controlados del servidor
     @app.exception_handler(Exception)
     async def global_exception_handler(request: Request, exc: Exception):
         return JSONResponse(
@@ -59,12 +62,16 @@ def create_app() -> FastAPI:
                 "success": False,
                 "message": "Ocurrió un error interno en el servidor",
                 "data": None,
-                "error": "Error interno del servidor.",
+                "error": {
+                    "code": "INTERNAL_SERVER_ERROR",
+                    "detail": "Error interno del servidor.",
+                },
                 "timestamp": get_timestamp(),
             },
         )
 
-    # Configuración de rutas existentes
+
+    # Middlewares y Rutas
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["*"],
